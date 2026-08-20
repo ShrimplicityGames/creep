@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>CREEP</title>
+<style>
+:root{--green:#8ed63f;--red:#c21818;--amber:#ffb15a;--text:#ffe6c1}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+html,body{height:100%;margin:0;overflow:hidden;}
+body{margin:0;overflow:hidden;background:#020403;font-family:Arial,Helvetica,sans-serif;color:var(--text);user-select:none}
+button{font-family:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#game{position:relative;width:100vw;height:100dvh;min-height:100dvh;overflow:hidden;background:radial-gradient(circle at 22% 12%,rgba(255,170,70,.13),transparent 24%),linear-gradient(to bottom,#82d1cd 0%,#4e8e91 43%,#26575e 72%,#16110d 100%)}
+#topStats,#topStats2{cursor:pointer}
+#top{position:absolute;top:0;left:0;right:0;height:86px;z-index:70;display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:linear-gradient(to bottom,rgba(159,73,18,.86),rgba(74,28,8,.58));border-bottom:1px solid rgba(255,190,110,.25);box-shadow:0 8px 20px rgba(0,0,0,.22)}
+.info{min-width:112px;font-size:12px;font-weight:1000;letter-spacing:1px;color:rgba(255,230,193,.88)}
+.info.right{text-align:right}.info b{display:block;font-size:22px;line-height:24px;color:#d5ff9c;font-family:"Courier New",monospace}
+#titleWrap{position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
+#title{font-size:50px;line-height:40px;font-weight:1000;letter-spacing:8px;color:var(--green);text-shadow:0 3px 0 #3d6b1f,0 0 18px rgba(142,214,63,.38)}
+#studio{font-size:16px;letter-spacing:3px;margin-top:8px;font-weight:1000;color:var(--red);-webkit-text-stroke:1px #110402}
+#topMini{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);display:flex;gap:8px;justify-content:center;align-items:center;font-size:9px;font-weight:1000;letter-spacing:.8px;color:rgba(255,230,193,.82);white-space:nowrap;pointer-events:auto;cursor:pointer}
+#topMini span{padding:2px 6px;border-radius:999px;background:rgba(0,0,0,.22);border:1px solid rgba(255,180,90,.12)}
+#tank{position:absolute;left:14px;right:14px;top:94px;bottom:calc(90px + env(safe-area-inset-bottom));overflow:hidden;border-radius:22px;border:3px solid rgba(255,200,120,.20);background:linear-gradient(105deg,transparent 0 14%,rgba(255,255,255,.065) 17%,transparent 20%),linear-gradient(to bottom,#84d5cf 0%,#4f8f93 40%,#295d63 70%,#17110d 100%);box-shadow:inset 0 0 40px rgba(255,255,255,.04),inset 0 0 100px rgba(0,0,0,.16),0 0 24px rgba(0,0,0,.28)}
+#snailLayer,#foodLayer,#eggLayer{position:absolute;inset:0;pointer-events:none}
+#snailLayer{z-index:10}#foodLayer{z-index:14}#eggLayer{z-index:18}
+#substrate{position:absolute;left:0;right:0;bottom:0;height:105px;z-index:4;background:radial-gradient(circle at 15% 30%,#8f6132 0 3px,transparent 4px),radial-gradient(circle at 52% 60%,#2d1c10 0 2px,transparent 3px),radial-gradient(circle at 77% 42%,#b17a3b 0 3px,transparent 4px),linear-gradient(to bottom,#704722,#1d120c);background-size:84px 44px,70px 38px,95px 48px,auto;border-top:1px solid rgba(255,214,145,.13)}
+#grime{position:absolute;inset:0;z-index:25;pointer-events:none;opacity:0;transition:opacity 1s ease;background:radial-gradient(circle at 16% 24%,rgba(70,110,40,.22),transparent 20%),radial-gradient(circle at 74% 19%,rgba(60,90,30,.18),transparent 25%),radial-gradient(circle at 84% 78%,rgba(80,120,42,.16),transparent 24%),repeating-linear-gradient(88deg,transparent 0 42px,rgba(35,80,27,.08) 45px 49px)}
+#glass{position:absolute;inset:0;z-index:30;pointer-events:none;background:linear-gradient(105deg,transparent 0 16%,rgba(255,255,255,.08) 19%,transparent 22%),linear-gradient(75deg,transparent 0 72%,rgba(255,255,255,.05) 75%,transparent 78%)}
+#bottom{position:absolute;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));height:56px;z-index:80;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.btn{border:none;border-radius:18px;background:linear-gradient(to bottom,rgba(135,64,15,.35),rgba(25,11,4,.95));color:var(--amber);font-size:15px;font-weight:1000;letter-spacing:1px;cursor:pointer;border:1px solid rgba(255,180,90,.18);box-shadow:inset 0 0 10px rgba(255,255,255,.04),0 6px 14px rgba(0,0,0,.22)}
+#feed{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.18),transparent 22%),linear-gradient(to bottom,#f58c26,#b74e0d 60%,#632608 100%);color:#2b1104}
+#feed:disabled{color:rgba(255,225,177,.45);background:linear-gradient(to bottom,#5a3d2c,#2b1a12);cursor:default}
+#feed small{display:block;font-size:10px;letter-spacing:1px;opacity:.75}
+.snail{position:absolute;width:64px;height:44px;transform-origin:center;filter:none}
+.shell,.foot,.head,.feel1,.feel2{position:absolute}
+.foot{left:15px;bottom:5px;width:33px;height:8px;border-radius:999px;background:#c89a67}
+.head{right:7px;bottom:9px;width:8px;height:7px;border-radius:50%;background:#d7b07f}
+.feel1,.feel2{right:0;width:10px;height:2px;border-radius:99px;background:#f5d39d}
+.feel1{bottom:15px;transform:rotate(-16deg)}.feel2{bottom:11px;transform:rotate(9deg)}
+.shell{left:8px;bottom:9px;width:30px;height:24px;border-radius:58% 42% 54% 46%;background:radial-gradient(circle at 28% 23%,rgba(255,255,255,.55),transparent 23%),linear-gradient(145deg,#f0d278 0%,#ba812b 55%,#744216 100%);border:2px solid rgba(79,43,14,.54);transform:rotate(-13deg);z-index:2}
+.shell:after{content:"";position:absolute;left:8px;top:6px;width:9px;height:9px;border:2px solid rgba(90,54,18,.32);border-radius:50%}
+.food.flakes{position:absolute;width:18px;height:12px;border-radius:4px;background:#d9e77b;border:2px solid #6a7b24;transform:translate(-50%,-50%) rotate(12deg)}
+.eggSac{position:absolute;width:30px;height:23px;border-radius:50%;z-index:18;background:radial-gradient(circle at 20% 45%,rgba(255,255,255,.82) 0 3px,transparent 4px),radial-gradient(circle at 44% 35%,rgba(255,255,255,.72) 0 3px,transparent 4px),radial-gradient(circle at 62% 56%,rgba(255,255,255,.8) 0 3px,transparent 4px),rgba(239,255,235,.22);border:1px solid rgba(255,255,255,.35);transform:translate(-50%,-50%);animation:pulseEgg 2.4s ease-in-out infinite}
+@keyframes pulseEgg{50%{filter:brightness(1.18)}}
+#modal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.48);z-index:100;padding:14px}
+#modal.show{display:flex}
+.panel{width:min(760px,94vw);max-height:min(620px,82vh);border-radius:22px;overflow:hidden;background:linear-gradient(to bottom,rgba(35,14,5,.97),rgba(8,14,10,.99));border:1px solid rgba(255,180,90,.26);box-shadow:0 20px 70px rgba(0,0,0,.6);display:flex;flex-direction:column}
+.panelTop{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid rgba(255,180,90,.16)}
+.panelTitle{font-size:22px;font-weight:1000;color:var(--amber);letter-spacing:2px}
+.close{background:#401608;color:var(--amber);border:1px solid #8a3a13;border-radius:12px;padding:8px 12px;font-weight:1000;cursor:pointer}
+.content{padding:14px;overflow:auto}
+.statLine{border-bottom:1px solid rgba(255,177,90,.12);padding:9px 0;font-size:14px;line-height:1.45}
+.toast{position:absolute;left:50%;top:106px;transform:translateX(-50%);padding:10px 14px;border-radius:999px;background:rgba(10,4,2,.86);border:1px solid rgba(255,180,90,.2);font-size:13px;font-weight:1000;z-index:90;opacity:0;transition:opacity .3s;text-align:center;max-width:90vw}
+@media(max-width:720px){#title{font-size:38px;line-height:32px;letter-spacing:5px}#studio{font-size:13px}.info{min-width:82px;font-size:10px}.info b{font-size:16px}.btn{font-size:13px}}
+
+#topStats,#topStats2{cursor:pointer}
+.buyBtn{margin-top:8px;background:#401608;color:var(--amber);border:1px solid #8a3a13;border-radius:12px;padding:8px 12px;font-weight:1000;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.buyBtn:disabled{opacity:.35;cursor:default}
+.sectionTitle{color:#d5ff9c;font-size:14px;font-weight:1000;letter-spacing:2px;margin:10px 0 5px;border-bottom:1px solid rgba(255,180,90,.18);padding-bottom:5px}
+.effect{color:rgba(255,230,193,.92);font-size:13px;margin-top:4px}
+.flavor{color:rgba(255,177,90,.86);font-size:12px;margin-top:5px;font-style:italic}
+.maxed{color:#8ed63f;font-weight:1000}
+.food.flakes,.food.pellets,.food.wafer,.food.bloodworms,.food.souls{position:absolute;transform:translate(-50%,-50%);pointer-events:none;will-change:left,top,transform}
+.food.flakes{width:70px;height:54px;background:none;border:none}
+.food.flakes:before,.food.flakes:after{content:"";position:absolute;width:22px;height:15px;border-radius:5px 9px 4px 8px;background:linear-gradient(145deg,#efff91,#c6d552 60%,#69781e);border:2px solid #526315;box-shadow:inset 0 0 5px rgba(255,255,255,.35),0 3px 5px rgba(0,0,0,.3)}
+.food.flakes:before{left:13px;top:18px;transform:rotate(-18deg)}
+.food.flakes:after{left:36px;top:24px;transform:rotate(23deg) scale(.86)}
+.food.pellets{width:70px;height:54px}
+.food.pellets:before,.food.pellets:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#c99a5f,#6e3e17 62%,#2c1308);border:2px solid rgba(20,8,3,.7);box-shadow:inset -3px -4px 4px rgba(0,0,0,.2),0 3px 5px rgba(0,0,0,.28)}
+.food.pellets:before{left:20px;top:20px}
+.food.pellets:after{left:38px;top:18px;transform:scale(.9)}
+.food.wafer{
+width:58px;
+height:58px;
+border-radius:50%;
+background:#1c3210;
+border:4px solid #5c7d22;
+box-shadow:0 3px 5px rgba(0,0,0,.28);
+}
+.food.wafer:after{
+content:"";
+position:absolute;
+left:15px;
+top:15px;
+width:20px;
+height:20px;
+border-radius:50%;
+background:rgba(196,229,91,.16);
+}
+.food.bloodworms{width:86px;height:60px}
+.food.bloodworms:before,.food.bloodworms:after{content:"";position:absolute;width:58px;height:14px;border-radius:999px;background:linear-gradient(to right,#5d0303,#e22622,#761010);border:2px solid rgba(45,0,0,.8);box-shadow:inset 0 2px 4px rgba(255,255,255,.15),0 3px 5px rgba(0,0,0,.32)}
+.food.bloodworms:before{left:15px;top:22px;transform:rotate(18deg)}
+.food.bloodworms:after{left:23px;top:36px;transform:rotate(-28deg)}
+.food.souls{width:72px;height:84px;border-radius:48% 52% 54% 46%;background:radial-gradient(circle,rgba(213,255,255,.45),rgba(132,206,255,.16) 40%,transparent 72%);filter:drop-shadow(0 0 13px rgba(170,230,255,.75));animation:pulseSoul 2.4s ease-in-out infinite}
+.food.souls:before{content:"";position:absolute;left:20px;top:16px;width:34px;height:50px;border-radius:55% 45% 48% 52%;background:radial-gradient(circle at 38% 26%,#fff,#ccefff 24%,#79a4ff 54%,#301a78 100%);box-shadow:0 0 18px rgba(170,230,255,.8),inset 0 -8px 14px rgba(30,10,90,.45)}
+.food.souls:after{content:"";position:absolute;left:32px;top:59px;width:16px;height:23px;border-radius:0 0 60% 60%;background:linear-gradient(to bottom,#83d7ff,transparent);filter:blur(1px);transform:skewX(-18deg)}
+@keyframes pulseSoul{50%{transform:translate(-50%,-50%) scale(1.09);opacity:.85}}
+
+
+/* ===== LOCKED SPECIES SPRITES ===== */
+.snail{position:absolute;filter:none;transform-origin:center}
+.snail .foot,.snail .head,.snail .feel1,.snail .feel2,.snail .shell,.snail .eye,.snail .body,.snail .leg1,.snail .leg2{position:absolute}
+.snail .eye{pointer-events:none}
+
+/* Bladder */
+.snail.bladder{width:84px;height:52px}
+.snail.bladder .foot{left:17px;bottom:5px;width:43px;height:9px;border-radius:999px;background:linear-gradient(to right,#b2865e,#e2bd89,#b98a61)}
+.snail.bladder .head{right:8px;bottom:11px;width:12px;height:10px;border-radius:50%;background:#e1bd8a}
+.snail.bladder .eye{right:-3px;top:-1px;width:2px;height:2px;border-radius:50%;background:#170904}
+.snail.bladder .feel1,.snail.bladder .feel2{right:-5px;width:15px;height:2px;border-radius:99px;background:#f5d39d;transform-origin:left center}
+.snail.bladder .feel1{bottom:20px;transform:rotate(-19deg)}
+.snail.bladder .feel2{bottom:14px;transform:rotate(11deg)}
+.snail.bladder .shell{left:10px;bottom:13px;width:36px;height:30px;border-radius:60% 40% 56% 44%;background:radial-gradient(circle at 27% 24%,rgba(255,255,255,.55),transparent 22%),linear-gradient(145deg,#f4d476 0%,#b9792b 55%,#6b3714 100%);border:2px solid rgba(79,43,14,.55);transform:rotate(-15deg);z-index:2}
+.snail.bladder .shell:after{content:"";position:absolute;left:9px;top:7px;width:11px;height:11px;border:2px solid rgba(90,54,18,.34);border-radius:50%}
+
+/* Ramshorn */
+.snail.ramshorn{width:94px;height:62px}
+.snail.ramshorn .foot{left:27px;bottom:6px;width:47px;height:10px;border-radius:999px;background:linear-gradient(to right,#9c7b5d,#d0ac84,#9a7256)}
+.snail.ramshorn .head{right:6px;bottom:12px;width:12px;height:10px;border-radius:50%;background:#d0ac84}
+.snail.ramshorn .eye{right:-3px;top:-1px;width:2px;height:2px;border-radius:50%;background:#170904}
+.snail.ramshorn .feel1,.snail.ramshorn .feel2{right:-7px;width:16px;height:2px;border-radius:99px;background:#f2cf9b;transform-origin:left center}
+.snail.ramshorn .feel1{bottom:21px;transform:rotate(-18deg)}
+.snail.ramshorn .feel2{bottom:15px;transform:rotate(10deg)}
+.snail.ramshorn .shell{left:6px;bottom:8px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#2d1207 0 6%,#c47625 7% 17%,#6f3212 18% 29%,#d99738 30% 43%,#7b3b14 44% 58%,#cf8a32 59% 72%,#3b1b0b 73% 100%);border:3px solid rgba(56,26,8,.76);box-shadow:inset 0 0 8px rgba(255,210,120,.2),inset -7px -7px 12px rgba(0,0,0,.22);z-index:2}
+.snail.ramshorn .shell:before{content:"";position:absolute;left:16px;top:16px;width:17px;height:17px;border-radius:50%;border:4px solid rgba(255,217,119,.2)}
+.snail.ramshorn .shell:after{content:"";position:absolute;left:9px;top:9px;width:31px;height:31px;border-radius:50%;border:3px solid rgba(45,19,7,.2)}
+
+/* MTS */
+.snail.mts{width:170px;height:66px}
+.snail.mts .shell{left:4px;bottom:8px;width:136px;height:44px;clip-path:polygon(0 50%,100% 0,100% 100%);background:repeating-linear-gradient(90deg,#4a210c 0 10px,#9d5720 11px 21px,#d58f3a 22px 28px,#6f300f 29px 39px);z-index:3;box-shadow:inset 0 4px 5px rgba(255,225,150,.12),inset 0 -6px 8px rgba(0,0,0,.28)}
+.snail.mts .shell:before{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,235,170,.22),transparent 42%,rgba(0,0,0,.22));clip-path:inherit}
+.snail.mts .shell:after{content:"";position:absolute;right:0;top:0;width:18px;height:44px;background:rgba(45,18,6,.32)}
+.snail.mts .body{left:132px;bottom:13px;width:35px;height:23px;border-radius:5px 7px 7px 5px;background:linear-gradient(to bottom,#6d5a49,#3f332b);z-index:2}
+.snail.mts .body:after{content:"";position:absolute;left:5px;right:5px;top:9px;height:4px;border-radius:99px;background:rgba(255,230,185,.10)}
+.snail.mts .head{left:159px;bottom:15px;width:21px;height:19px;border-radius:6px 8px 8px 4px;background:linear-gradient(to bottom,#6e5c4b,#3b3028);z-index:4}
+.snail.mts .eye{right:4px;top:6px;width:3px;height:5px;border-radius:2px;background:#090504}
+.snail.mts .feel1,.snail.mts .feel2{left:165px;width:17px;height:3px;border-radius:99px;background:#7e6a55;transform-origin:left center;z-index:5}
+.snail.mts .feel1{bottom:37px;transform:rotate(-48deg)}
+.snail.mts .feel2{bottom:35px;transform:rotate(-30deg)}
+.snail.mts .leg1,.snail.mts .leg2{width:5px;height:12px;border-radius:3px;background:#3a2f27;z-index:1}
+.snail.mts .leg1{left:138px;bottom:5px;transform:rotate(10deg)}
+.snail.mts .leg2{left:162px;bottom:5px;transform:rotate(-4deg)}
+
+/* Mystery */
+.snail.mystery{width:118px;height:76px}
+.snail.mystery .foot{left:25px;bottom:7px;width:76px;height:18px;border-radius:999px 999px 70% 70%;background:radial-gradient(circle at 77% 25%,rgba(255,230,170,.24),transparent 24%),linear-gradient(to right,#8b6244,#e5bd86 40%,#c28d5e 72%,#7a4930);box-shadow:inset 0 -5px 5px rgba(67,34,17,.26);z-index:1}
+.snail.mystery .foot:after{content:"";position:absolute;left:9px;right:7px;bottom:2px;height:3px;border-radius:999px;background:rgba(50,25,14,.24)}
+.snail.mystery .head{right:3px;bottom:20px;width:22px;height:15px;border-radius:62% 38% 52% 48%;background:radial-gradient(circle at 38% 25%,rgba(255,238,190,.34),transparent 25%),linear-gradient(145deg,#e8c08a,#a56f45);z-index:3}
+.snail.mystery .eye{right:3px;top:2px;width:3px;height:3px;border-radius:50%;background:#170904}
+.snail.mystery .feel1,.snail.mystery .feel2{right:-20px;width:31px;height:3px;border-radius:99px;background:linear-gradient(to right,#e6bd87,#f8e0b8);transform-origin:left center;z-index:4}
+.snail.mystery .feel1{bottom:32px;transform:rotate(-18deg)}
+.snail.mystery .feel2{bottom:24px;transform:rotate(13deg)}
+.snail.mystery .feel1:before,.snail.mystery .feel2:before{content:"";position:absolute;left:-2px;top:-1px;width:6px;height:5px;border-radius:50%;background:#d9aa73}
+.snail.mystery .shell{left:4px;bottom:12px;width:76px;height:64px;border-radius:58% 42% 52% 48%;background:radial-gradient(circle at 31% 23%,rgba(255,255,255,.68),transparent 17%),conic-gradient(from 130deg at 45% 48%,#5b2c0c 0deg,#b86d1f 42deg,#f1c75e 78deg,#8b4514 120deg,#df9f35 168deg,#6f3510 221deg,#ffd978 282deg,#7b3d13 332deg,#5b2c0c 360deg);border:4px solid rgba(75,39,11,.72);transform:rotate(-9deg);z-index:2;box-shadow:inset -10px -10px 16px rgba(46,22,7,.3),inset 5px 5px 8px rgba(255,230,140,.14)}
+.snail.mystery .shell:before{content:"";position:absolute;left:23px;top:19px;width:27px;height:25px;border-radius:50%;border:5px solid rgba(76,35,10,.28);box-shadow:0 0 0 5px rgba(255,213,111,.11)}
+.snail.mystery .shell:after{content:"";position:absolute;left:31px;top:27px;width:10px;height:9px;border-radius:50%;background:rgba(68,30,8,.34)}
+
+/* Mobile layout pass */
+#top{height:72px;padding:8px 12px}
+#tank{top:80px;bottom:calc(78px + env(safe-area-inset-bottom));left:8px;right:8px;border-radius:18px}
+#bottom{left:8px;right:8px;bottom:calc(10px + env(safe-area-inset-bottom));height:54px;gap:8px}
+.btn{font-size:12px;border-radius:14px}
+#title{font-size:34px;line-height:28px;letter-spacing:5px}
+#studio{font-size:12px;margin-top:6px}
+#topMini{bottom:4px;font-size:8px;gap:5px}
+#topMini span{padding:1px 4px}
+.info{min-width:74px;font-size:9px}
+.info b{font-size:15px;line-height:18px}
+.panel{max-height:86vh}
+.content{padding:12px}
+.statLine{font-size:13px}
+
+
+/* v11 performance polish */
+.snail{will-change:transform;left:0!important;top:0!important;}
+#waterGross,#grossFloat,#grime{transition:opacity .25s linear;}
+@media(max-width:720px){.snail.mystery .shell,.snail.ramshorn .shell,.snail.mts .shell{box-shadow:none!important}.snail.mystery{width:106px;height:68px}.snail.mts{width:150px;height:58px}}
+
+/* green gross water overlay controlled by JS */
+#waterGross{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;background:radial-gradient(circle at 25% 28%,rgba(100,150,34,.24),transparent 24%),radial-gradient(circle at 72% 58%,rgba(60,105,25,.22),transparent 28%),linear-gradient(to bottom,rgba(102,150,33,.1),rgba(26,70,18,.28));transition:opacity .7s ease}
+#grossFloat{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;background:radial-gradient(circle at 18% 22%,rgba(180,210,84,.28) 0 2px,transparent 3px),radial-gradient(circle at 56% 34%,rgba(160,200,76,.20) 0 2px,transparent 3px),radial-gradient(circle at 82% 66%,rgba(130,180,63,.18) 0 3px,transparent 4px),radial-gradient(circle at 34% 76%,rgba(190,220,90,.16) 0 2px,transparent 3px);background-size:80px 60px,110px 90px,130px 100px,95px 75px;transition:opacity .7s ease}
+
+@media(max-height:760px){
+ #top{height:64px;padding:6px 10px}
+ #tank{top:70px;bottom:calc(72px + env(safe-area-inset-bottom));}
+ #bottom{height:50px;bottom:calc(8px + env(safe-area-inset-bottom));}
+ #title{font-size:30px;line-height:25px;letter-spacing:4px}
+ #studio{font-size:10px;margin-top:5px}
+ #topMini{font-size:7px;bottom:3px;gap:3px}
+ .info{font-size:8px;min-width:68px}
+ .info b{font-size:14px;line-height:16px}
+ .btn{font-size:11px;border-radius:13px}
+ #substrate{height:94px}
+}
+@media(max-height:680px){
+ #top{height:58px}
+ #tank{top:62px;bottom:calc(64px + env(safe-area-inset-bottom));}
+ #bottom{height:46px}
+ #title{font-size:26px;line-height:22px}
+ #studio{font-size:9px;margin-top:4px}
+ #topMini{display:none}
+}
+
+
+/* Smaller food sprites so the tank doesn't look like a buffet exploded */
+.food.flakes{width:50px;height:39px}
+.food.flakes:before,.food.flakes:after{width:15px;height:10px;border-width:1.5px}
+.food.flakes:before{left:9px;top:13px}
+.food.flakes:after{left:26px;top:17px}
+.food.pellets{width:50px;height:39px}
+.food.pellets:before,.food.pellets:after{width:11px;height:11px;border-width:1.5px}
+.food.pellets:before{left:14px;top:14px}
+.food.pellets:after{left:27px;top:13px}
+.food.wafer{width:40px;height:40px;border-width:3px}
+.food.wafer:after{left:10px;top:10px;width:14px;height:14px}
+.food.bloodworms{width:60px;height:42px}
+.food.bloodworms:before,.food.bloodworms:after{width:41px;height:10px;border-width:1.5px}
+.food.bloodworms:before{left:10px;top:15px}
+.food.bloodworms:after{left:16px;top:25px}
+.food.souls{width:50px;height:59px}
+.food.souls:before{left:14px;top:11px;width:24px;height:35px}
+.food.souls:after{left:22px;top:41px;width:11px;height:16px}
+
+#achPopup{position:absolute;left:50%;top:88px;transform:translateX(-50%) translateY(-8px);z-index:95;min-width:260px;max-width:86vw;padding:10px 14px;border-radius:16px;background:rgba(8,14,10,.88);border:1px solid rgba(142,214,63,.28);box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .45s ease,transform .45s ease;text-align:left}
+#achPopup.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.achHead{font-size:10px;letter-spacing:2px;font-weight:1000;color:#8ed63f;margin-bottom:3px}
+.achName{font-size:15px;font-weight:1000;color:#ffe6c1;letter-spacing:.5px}
+.achFlavor{font-size:12px;color:rgba(255,177,90,.88);font-style:italic;margin-top:3px}
+.achRow{padding:9px 0;border-bottom:1px solid rgba(255,177,90,.12)}
+.achRow.locked{opacity:.48}
+.achReq{font-size:12px;color:rgba(255,230,193,.75);margin-top:2px}
+.statGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.statCard{border:1px solid rgba(255,177,90,.12);border-radius:14px;padding:10px;background:rgba(255,255,255,.025)}
+.statCard b{display:block;color:#d5ff9c;font-size:12px;letter-spacing:1px}
+.statCard span{font-size:16px;font-weight:1000}
+
+
+/* v15: keep mini stat elements in DOM for safety, but hide the ugly strip */
+#topMini{display:none!important}
+
+/* itch.io iframe save fix: ask players to open the direct game URL so localStorage persists */
+#itchOpenOverlay{position:absolute;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 25%,rgba(142,214,63,.12),transparent 32%),rgba(2,4,3,.88);backdrop-filter:blur(3px);text-align:center}
+#itchOpenOverlay.show{display:flex}
+.itchOpenCard{width:min(420px,92vw);border-radius:24px;padding:22px 18px;background:linear-gradient(to bottom,rgba(35,14,5,.97),rgba(8,14,10,.99));border:1px solid rgba(255,180,90,.28);box-shadow:0 20px 70px rgba(0,0,0,.55)}
+.itchOpenCard h1{margin:0 0 8px;font-size:28px;letter-spacing:4px;color:#8ed63f;text-shadow:0 0 18px rgba(142,214,63,.28)}
+.itchOpenCard p{margin:8px 0 14px;font-size:14px;line-height:1.45;color:#ffe6c1}
+#openGameTab{width:100%;border:none;border-radius:18px;padding:14px 16px;background:linear-gradient(to bottom,#f58c26,#b74e0d 60%,#632608 100%);color:#2b1104;font-size:15px;font-weight:1000;letter-spacing:1px;cursor:pointer}
+#playEmbeddedAnyway{margin-top:10px;background:transparent;border:none;color:rgba(255,230,193,.72);font-size:12px;font-weight:1000;text-decoration:underline;cursor:pointer}
+
+
+.metaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+.metaCard{padding:10px;border:1px solid rgba(142,214,63,.22);border-radius:12px;background:rgba(0,0,0,.18)}
+.metaCard b{color:#b8ee78}.tiny{font-size:11px;opacity:.78;line-height:1.35}
+.choiceRow{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.choiceRow .buyBtn{flex:1;min-width:92px}
+.progressTrack{height:9px;background:rgba(0,0,0,.45);border-radius:9px;overflow:hidden;margin:7px 0}
+.progressFill{height:100%;background:linear-gradient(90deg,#7aaa35,#d7a62d);transition:width .25s}
+.dangerFill{background:linear-gradient(90deg,#b4cf38,#8c4a22)}
+#goalStrip{position:absolute;left:50%;transform:translateX(-50%);top:78px;z-index:40;padding:5px 10px;border-radius:12px;background:rgba(4,8,5,.70);border:1px solid rgba(142,214,63,.18);font-size:10px;font-weight:900;letter-spacing:.5px;color:#d9efb8;pointer-events:none;white-space:nowrap;max-width:80%;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div id="game">
+<div id="itchOpenOverlay" aria-live="polite">
+  <div class="itchOpenCard">
+    <h1>CREEP</h1>
+    <p>Itch embeds can block saves on some browsers. Open the game in a new tab so your colony actually remembers its horrible little decisions.</p>
+    <button id="openGameTab" type="button">OPEN GAME IN NEW TAB</button>
+    <button id="playEmbeddedAnyway" type="button">Play embedded anyway</button>
+  </div>
+</div>
+
+<div id="top"><div class="info" id="topStats">COLONY<b id="pop">2</b></div><div id="titleWrap"><div id="title">CREEP</div><div id="studio">SHRIMPLICITY GAMES</div></div><div id="topMini"><span id="miniSlime">S/S 0</span><span id="miniGrowth">G/S 0</span><span id="miniAch">0/40</span></div><div class="info right" id="topStats2">SLIME<b id="slime">0</b></div></div>
+<div class="toast" id="toast"></div><div id="goalStrip">GOAL: Build the colony.</div>
+<div id="achPopup"></div>
+<div id="tank"><div id="waterGross"></div><div id="grossFloat"></div><div id="snailLayer"></div><div id="foodLayer"></div><div id="eggLayer"></div><div id="substrate"></div><div id="grime"></div><div id="glass"></div></div>
+<div id="bottom"><button class="btn" id="upgradesBtn">UPGRADES</button><button class="btn" id="feed">FEED<br><small id="feedTxt">FLAKES</small></button><button class="btn" id="achievementsBtn">ACHIEVEMENTS</button></div>
+<div id="modal"><div class="panel"><div class="panelTop"><div class="panelTitle" id="panelTitle">STATS</div><button class="close" id="close">X</button></div><div class="content" id="content"></div></div></div>
+</div>
+
+<script>
+
+function setupItchNewTabFix(){
+ try{
+  const inFrame=window.self!==window.top;
+  const overlay=document.getElementById("itchOpenOverlay");
+  const openBtn=document.getElementById("openGameTab");
+  const embedBtn=document.getElementById("playEmbeddedAnyway");
+  if(!overlay||!openBtn||!embedBtn)return;
+  if(inFrame){overlay.classList.add("show");}
+  openBtn.addEventListener("click",function(){
+   const directUrl=window.location.href;
+   const opened=window.open(directUrl,"_blank","noopener,noreferrer");
+   if(!opened)window.top.location.href=directUrl;
+  });
+  embedBtn.addEventListener("click",function(){overlay.classList.remove("show");});
+ }catch(e){}
+}
+setupItchNewTabFix();
+let lastTouchEnd=0;
+document.addEventListener("touchend",function(e){
+ const now=Date.now();
+ if(now-lastTouchEnd<=320)e.preventDefault();
+ lastTouchEnd=now;
+},{passive:false});
+document.addEventListener("gesturestart",function(e){e.preventDefault();});
+document.addEventListener("contextmenu",function(e){e.preventDefault();});
+
+const SAVE_KEY="creep_final_patch_v15";
+const OLD_SAVE_KEYS=["creep_species_mobile_gross_v1","creep_mobile_food_holdbuy_v2","creep_mobile_food_holdbuy_v3","creep_mobile_perf_v4","creep_mobile_safe_perf_v5","creep_mobile_savekill_v6","creep_hotfix_v7","creep_hotfix_savekill_v8","creep_emergency_perf_v9","creep_noeggs_species_v10","creep_noeggs_species_v11"];
+for(const k of OLD_SAVE_KEYS){try{localStorage.removeItem(k);}catch(e){}}
+const $=id=>document.getElementById(id);
+const tank=$("tank"),snailLayer=$("snailLayer"),foodLayer=$("foodLayer"),eggLayer=$("eggLayer");
+const popEl=$("pop"),slimeEl=$("slime"),feedBtn=$("feed"),feedTxt=$("feedTxt"),toastEl=$("toast"),modal=$("modal"),content=$("content");
+const miniSlime=$("miniSlime"),miniGrowth=$("miniGrowth"),miniAch=$("miniAch");
+
+const foods=[
+ {id:"flakes",name:"Flakes",unlock:0,potBase:50000,durBase:80000,boost:.50,duration:8.5,css:"flakes",flavor:"Starter food. Cheap little leaf-chips for the first wet mistake."},
+ {id:"pellets",name:"Pellets",unlock:1000000,potBase:1500000,durBase:2000000,boost:.90,duration:10,css:"pellets",flavor:"Round, dense, suspicious. The colony notices the pattern."},
+ {id:"wafer",name:"Wafers",unlock:100000000,potBase:80000000,durBase:100000000,boost:1.35,duration:12,css:"wafer",flavor:"A sinking green moon. They arrive before it touches the floor."},
+ {id:"bloodworms",name:"Bloodworms",unlock:10000000000,potBase:7000000000,durBase:9000000000,boost:2.10,duration:10,css:"bloodworms",flavor:"The water accepts the offering. Nobody asks where it came from."},
+ {id:"souls",name:"Souls",unlock:10000000000000,potBase:9000000000000,durBase:12000000000000,boost:3.20,duration:9,css:"souls",flavor:"Technically edible, spiritually rude."}
+];
+
+const stateDefault=()=>({
+ realPop:2,
+ slime:0,
+ totalEggs:0,
+ totalFeeds:0,
+ totalSlimeEarned:0,
+ highestPop:2,
+ totalUpgrades:0,
+ achievements:{},
+ createdAt:Date.now(),
+ lastSave:Date.now(),
+ upgrades:{rich:0,slimy:0,warm:0,calcium:0},
+ foodTier:0,
+ foodUp:{potency:0,duration:0},
+ eggProgress:0,
+ unlockedRamshorn:false,
+ unlockedMTS:false,
+ unlockedMystery:false,
+ slimeBonus:1,
+ condition:20,
+ careMode:"balanced",
+ biomass:0,
+ totalBiomass:0,
+ collapses:0,
+ mutations:{shell:0,glands:0,dormant:0,toxic:0,mind:0},
+ evolution:{breed:0,slime:0,offline:0,mutation:0,retention:0},
+ tankType:"starter",
+ unlockedTanks:{starter:true},
+ nextEventAt:Date.now()+120000,
+ eventSeen:0
+});
+
+let state=stateDefault(),snails=[],feedCooldown=0,activeFood=null,tickCount=0;
+try{
+ const raw=localStorage.getItem(SAVE_KEY);
+ if(raw){
+  const loaded=JSON.parse(raw);
+  state={...stateDefault(),...loaded};
+  state.upgrades={...stateDefault().upgrades,...(loaded.upgrades||{})};
+  state.foodUp={...stateDefault().foodUp,...(loaded.foodUp||{})};
+  state.achievements={...(loaded.achievements||{})};
+  state.mutations={...stateDefault().mutations,...(loaded.mutations||{})};
+  state.evolution={...stateDefault().evolution,...(loaded.evolution||{})};
+  state.unlockedTanks={...stateDefault().unlockedTanks,...(loaded.unlockedTanks||{})};
+  if(!state.highestPop)state.highestPop=state.realPop||2;
+  if(!state.totalSlimeEarned)state.totalSlimeEarned=0;
+  if(!state.totalUpgrades)state.totalUpgrades=0;
+  if(typeof state.unlockedRamshorn!=="boolean")state.unlockedRamshorn=false;
+  if(!state.slimeBonus)state.slimeBonus=state.unlockedRamshorn?1.15:1;
+ }
+}catch(e){}
+
+function save(){state.lastSave=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(state))}
+function safeSave(){try{save();}catch(e){}}
+window.addEventListener("pagehide",safeSave);
+window.addEventListener("beforeunload",safeSave);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")safeSave();});
+function fmt(n){
+ n=Number(n)||0;
+ const abs=Math.abs(n);
+ const trim=x=>Number(x).toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1");
+ const units=[[1e18,"Qi"],[1e15,"Qa"],[1e12,"T"],[1e9,"B"],[1e6,"M"],[1e3,"K"]];
+ for(const [v,suf] of units){if(abs>=v)return trim(n/v)+suf;}
+ return Math.floor(n).toString();
+}
+function fullFmt(n){
+ n=Number(n)||0;
+ const abs=Math.abs(n);
+ const trim=x=>Number(x).toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1");
+ const units=[[1e18,"quintillion"],[1e15,"quadrillion"],[1e12,"trillion"],[1e9,"billion"],[1e6,"million"],[1e3,"thousand"]];
+ for(const [v,name] of units){if(abs>=v)return trim(n/v)+" "+name;}
+ return Math.floor(n).toString();
+}
+function rand(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function substrateTop(){return tank.clientHeight-105}
+function laneY(depth){return substrateTop()+10+(5-depth)*15+rand(-2,2)}
+function targetVisible(){return Math.min(28,Math.max(2,Math.floor(state.realPop)))}
+
+const TANKS={
+ starter:{name:"Starter Aquarium",desc:"Balanced glass box. Innocent for now.",breed:1,slime:1,mut:1},
+ blackwater:{name:"Blackwater Tank",desc:"Slow breeding, rich residue.",breed:.82,slime:1.55,mut:1.15},
+ breeder:{name:"Heated Breeder",desc:"Population detonates. Water follows.",breed:1.55,slime:.88,mut:1},
+ abandoned:{name:"Abandoned Store Tank",desc:"Hostile, filthy, mutation-prone.",breed:.72,slime:1.25,mut:2.0}
+};
+const MUTATIONS={
+ shell:{name:"Thick Shells",desc:"+10% breeding per level.",base:2e9,max:5},
+ glands:{name:"Slime Glands",desc:"+18% slime per level.",base:5e9,max:5},
+ dormant:{name:"Dormant Eggs",desc:"+15% offline efficiency per level.",base:2e10,max:4},
+ toxic:{name:"Toxic Mucus",desc:"+20% slime in filthy water per level.",base:8e10,max:4},
+ mind:{name:"Colony Mind",desc:"+8% to all production per level.",base:5e11,max:5}
+};
+const EVOS={
+ breed:{name:"Inherited Fertility",desc:"+15% breeding permanently.",base:2},
+ slime:{name:"Permanent Residue",desc:"+20% slime permanently.",base:2},
+ offline:{name:"Dormancy",desc:"+20% offline efficiency.",base:3},
+ mutation:{name:"Unstable Genome",desc:"Mutations cost 12% less.",base:3},
+ retention:{name:"Carryover",desc:"Start collapsed runs with more slime.",base:5}
+};
+function tankData(){return TANKS[state.tankType]||TANKS.starter}
+function conditionEffects(){
+ const c=state.condition||0;
+ if(c<35)return {breed:1.20,slime:.92,mut:.65,label:"CLEAN"};
+ if(c<70)return {breed:1.02,slime:1.30,mut:1,label:"MURKY"};
+ return {breed:.90,slime:1.60*(1+(state.mutations.toxic||0)*.20),mut:1.8,label:"TOXIC"};
+}
+function mutationMult(){
+ return (1+(state.mutations.shell||0)*.10)*(1+(state.mutations.mind||0)*.08);
+}
+function slimeMutationMult(){
+ return (1+(state.mutations.glands||0)*.18)*(1+(state.mutations.mind||0)*.08);
+}
+function evoBreed(){return 1+(state.evolution.breed||0)*.15}
+function evoSlime(){return 1+(state.evolution.slime||0)*.20}
+function mutationCost(id){
+ const m=MUTATIONS[id],lvl=state.mutations[id]||0;
+ return Math.floor(m.base*Math.pow(3.1,lvl)*Math.pow(.88,state.evolution.mutation||0));
+}
+function evoCost(id){const e=EVOS[id],lvl=state.evolution[id]||0;return Math.ceil(e.base*Math.pow(1.75,lvl))}
+function collapseReward(){
+ const popScore=Math.max(0,Math.log10(Math.max(1,state.highestPop))-12);
+ const slimeScore=Math.max(0,Math.log10(Math.max(1,state.totalSlimeEarned))-12)*.45;
+ const muts=Object.values(state.mutations).reduce((a,b)=>a+b,0)*.22;
+ return Math.max(1,Math.floor(1+popScore+slimeScore+muts));
+}
+function nextGoal(){
+ if(!state.unlockedRamshorn)return "Unlock Ramshorns • 10M slime";
+ if(!state.unlockedMTS)return "Unlock MTS • 100M slime";
+ if(!state.unlockedMystery)return "Unlock Mystery Snails • 1B slime";
+ if(state.foodTier<4)return "Push deeper • unlock "+foods[state.foodTier+1].name;
+ if(state.realPop<1e15)return "Reach 1Qa population to collapse the tank";
+ return "Tank collapse available • harvest Biomass";
+}
+
+function currentFood(){return foods[state.foodTier]}
+function foodDuration(){return (currentFood().duration + state.foodUp.duration*1.4)*1000}
+function foodPotency(){return currentFood().boost + state.foodUp.potency*.18}
+function hatchTime(){return Math.max(6,14-state.upgrades.calcium)}
+function breedingRate(){
+ const ce=conditionEffects(),td=tankData();
+ return 0.015*(1+state.upgrades.rich*0.12)*(1+state.upgrades.calcium*0.08)*(1+state.upgrades.warm*0.012)
+ *mutationMult()*evoBreed()*ce.breed*td.breed*(activeFood?(1+foodPotency()):1);
+}
+function slimePerSecond(){
+ const ce=conditionEffects(),td=tankData();
+ return (state.realPop*0.12)*(1+state.upgrades.slimy*0.15)*state.slimeBonus*slimeMutationMult()*evoSlime()*ce.slime*td.slime;
+}
+function showToast(t){toastEl.textContent=t;toastEl.style.opacity=1;setTimeout(()=>toastEl.style.opacity=0,1700)}
+
+function currentSpecies(){
+ if(state.unlockedMystery)return "mystery";
+ if(state.unlockedMTS)return "mts";
+ if(state.unlockedRamshorn)return "ramshorn";
+ return "bladder";
+}
+function speciesHTML(species){
+ if(species==="ramshorn")return '<div class="shell"></div><div class="foot"></div><div class="head"><div class="eye"></div></div><div class="feel1"></div><div class="feel2"></div>';
+ if(species==="mts")return '<div class="shell"></div><div class="body"></div><div class="head"><div class="eye"></div></div><div class="feel1"></div><div class="feel2"></div><div class="leg1"></div><div class="leg2"></div>';
+ if(species==="mystery")return '<div class="shell"></div><div class="foot"></div><div class="head"><div class="eye"></div></div><div class="feel1"></div><div class="feel2"></div>';
+ return '<div class="shell"></div><div class="foot"></div><div class="head"><div class="eye"></div></div><div class="feel1"></div><div class="feel2"></div>';
+}
+
+
+
+function speciesScale(species,depth){
+ const base=.72+depth*.035;
+ if(species==="bladder")return base*.95;
+ if(species==="ramshorn")return base*.82;
+ if(species==="mts")return base*.56;
+ if(species==="mystery")return base*.68;
+ return base;
+}
+
+function createSnail(){
+ const species=currentSpecies(); const el=document.createElement("div"); el.className="snail "+species; el.innerHTML=speciesHTML(species); snailLayer.appendChild(el);
+ const depth=Math.ceil(rand(1,5));
+ snails.push({el,species,x:rand(38,Math.max(64,tank.clientWidth-90)),y:laneY(depth),tx:rand(38,Math.max(64,tank.clientWidth-90)),ty:laneY(depth),depth,dir:Math.random()<.5?-1:1,speed:rand(.0014,.0032),idle:rand(140,420)});
+}
+function syncVisible(){const target=targetVisible();while(snails.length<target)createSnail();while(snails.length>target){const s=snails.pop();s.el.remove()}}
+
+let lastMoveFrame=0;
+function moveSnails(ts=0){
+ if(ts-lastMoveFrame<48){requestAnimationFrame(moveSnails);return;}
+ lastMoveFrame=ts;
+ const w=tank.clientWidth;
+ for(const s of snails){
+   if(s.idle>0)s.idle-=3;
+   else if(Math.random()<.035){
+     if(activeFood && state.realPop<1000000){s.tx=activeFood.x+rand(-70,70);s.ty=laneY(Math.ceil(rand(1,5)))}
+     else{s.tx=rand(24,Math.max(64,w-115));if(Math.random()<.35)s.depth=clamp(s.depth+(Math.random()<.5?-1:1),1,5);s.ty=laneY(s.depth)}
+     s.idle=rand(90,260);
+   }
+   const mult=(activeFood&&state.realPop<1000000?1.35:1)*(1+state.upgrades.warm*0.045);
+   s.x+=(s.tx-s.x)*s.speed*mult*5; s.y+=(s.ty-s.y)*s.speed*mult*5; s.dir=(s.tx-s.x)>=0?1:-1;
+   const scale=speciesScale(s.species,s.depth);
+   s.el.style.zIndex=10+s.depth;
+   s.el.style.transform="translate3d("+s.x.toFixed(1)+"px,"+s.y.toFixed(1)+"px,0) "+(s.dir<0?"scaleX(-1) ":"")+"scale("+scale.toFixed(3)+")";
+ }
+ requestAnimationFrame(moveSnails);
+}
+
+function dropFood(){
+ if(activeFood||feedCooldown>0)return;
+ const food=currentFood();
+ const el=document.createElement("div"); el.className="food "+food.css; foodLayer.appendChild(el);
+ const x=rand(90,Math.max(120,tank.clientWidth-90)); let y=-30; const target=laneY(5)-8; activeFood={el,x,y,type:food.id};
+ function fall(){
+   if(!activeFood||activeFood.el!==el)return;
+   y+=2.4; el.style.left=x+"px"; el.style.top=y+"px";
+   if(y<target)requestAnimationFrame(fall);
+   else{activeFood.y=target;for(const s of snails){s.tx=x+rand(-52,52);s.ty=laneY(Math.ceil(rand(1,5)));s.idle=0}
+     setTimeout(()=>{if(activeFood&&activeFood.el===el){el.remove();activeFood=null}},foodDuration())}
+ }
+ fall(); state.totalFeeds++; state.condition=clamp((state.condition||0)+3.5,0,100); checkAchievements(); feedCooldown=Math.max(8,22-state.upgrades.warm*.12); feedBtn.disabled=true;
+}
+
+function addDirectBirths(){
+ const births=Math.floor(state.eggProgress);
+ if(births<=0)return;
+ state.eggProgress-=births;
+ state.realPop+=births;
+ state.totalEggs+=births;
+ syncVisible();
+}
+
+
+function gameTick(){
+ const slimeGain=slimePerSecond()/5;
+ state.slime+=slimeGain;
+ state.totalSlimeEarned+=slimeGain;
+ state.highestPop=Math.max(state.highestPop||0,state.realPop);
+ state.eggProgress += state.realPop * breedingRate() / 5;
+ addDirectBirths();
+ const mode=state.careMode||"balanced";
+ const logp=Math.max(0,Math.log10(Math.max(10,state.realPop))-4);
+ const drift=(mode==="neglect"?.020:mode==="clean"?-.018:.004)+(logp*.0015);
+ state.condition=clamp((state.condition||20)+drift,0,100);
+ if(Date.now()>=(state.nextEventAt||0)){triggerEvent();state.nextEventAt=Date.now()+90000+Math.random()*120000;}
+ checkAchievements();
+ if(feedCooldown>0){feedCooldown-=.2;feedTxt.textContent=Math.ceil(feedCooldown)+"s";if(feedCooldown<=0){feedCooldown=0;feedBtn.disabled=false;feedTxt.textContent=currentFood().name.toUpperCase()}}
+ syncVisible();
+ tickCount++;
+ if(tickCount%3===0)updateUI();
+}
+
+
+let grossTier=-1;
+function grimeTier(){
+ const p=state.realPop;
+ if(p>=1e17)return 9;      // 100Qa pea soup
+ if(p>=1e16)return 8;      // 10Qa almost opaque
+ if(p>=1e15)return 7;      // 1Qa swamp
+ if(p>=1e14)return 6;      // 100T grime stage 2
+ if(p>=1e13)return 5;      // 10T heavy green
+ if(p>=1e12)return 4;      // 1T murk
+ if(p>=1e11)return 3;      // 100B grime stage 1
+ if(p>=1e10)return 2;      // 10B mild grime
+ if(p>=1e9)return 1;       // 1B faint haze
+ if(p>=1e8)return 0.5;     // 100M tiny tint
+ return 0;
+}
+function updateGrossVisuals(){
+ const tier=grimeTier();
+ if(tier===grossTier)return;
+ grossTier=tier;
+ const wg=$("waterGross"),gf=$("grossFloat"),gr=$("grime");
+ const vals={
+  0:[0,0,0],
+  0.5:[.04,.015,.025],
+  1:[.07,.025,.04],
+  2:[.11,.04,.065],
+  3:[.18,.065,.10],
+  4:[.24,.085,.14],
+  5:[.31,.11,.18],
+  6:[.38,.14,.23],
+  7:[.45,.17,.27],
+  8:[.52,.19,.31],
+  9:[.60,.22,.36]
+ };
+ wg.style.opacity=vals[tier][0];
+ gf.style.opacity=vals[tier][1];
+ gr.style.opacity=vals[tier][2];
+}
+function updateUI(){
+ popEl.textContent=fmt(state.realPop);
+ slimeEl.textContent=fmt(state.slime);
+ if(miniSlime)miniSlime.textContent="S/S "+fmt(slimePerSecond());
+ if(miniGrowth)miniGrowth.textContent="G/S "+fmt(state.realPop*breedingRate());
+ if(miniAch)miniAch.textContent=Object.keys(state.achievements||{}).length+"/"+ACHIEVEMENTS.length;
+ updateGrossVisuals();
+ const gs=$("goalStrip");if(gs)gs.textContent="GOAL: "+nextGoal()+" • "+conditionEffects().label+" "+Math.round(state.condition||0)+"%";
+ if(feedCooldown<=0)feedTxt.textContent=currentFood().name.toUpperCase();
+}
+
+function upgradeCost(base,scale,lvl){return Math.floor(base*Math.pow(scale,lvl))}
+function foodCost(type){
+ if(type==="potency")return upgradeCost(currentFood().potBase,2.7,state.foodUp.potency);
+ return upgradeCost(currentFood().durBase,3.1,state.foodUp.duration);
+}
+
+function buyUpgrade(type){
+ const u=state.upgrades;
+ let cost=0;
+ if(type==="rich")cost=upgradeCost(1000,1.25,u.rich);
+ if(type==="slimy")cost=upgradeCost(1500,1.4,u.slimy);
+ if(type==="warm")cost=upgradeCost(500,1.18,u.warm);
+ if(type==="calcium"){if(u.calcium>=8)return;cost=upgradeCost(250000,4,u.calcium)}
+ if(state.slime<cost){showToast("Not enough slime.");return}
+ state.slime-=cost;
+ if(type==="rich")u.rich++;
+ if(type==="slimy")u.slimy++;
+ if(type==="warm")u.warm++;
+ if(type==="calcium")u.calcium++;
+ state.totalUpgrades++;
+ checkAchievements();
+ showUpgrades();
+}
+
+function buyFoodUpgrade(type){
+ if(state.foodUp[type]>=5)return;
+ const cost=foodCost(type);
+ if(state.slime<cost){showToast("Not enough slime.");return}
+ state.slime-=cost; state.foodUp[type]++; state.totalUpgrades++; checkAchievements(); showUpgrades();
+}
+
+function unlockNextFood(){
+ if(state.foodTier>=foods.length-1)return;
+ const next=foods[state.foodTier+1];
+ if(state.slime<next.unlock){showToast("Not enough slime.");return}
+ state.slime-=next.unlock;
+ state.foodTier++;
+ state.foodUp={potency:0,duration:0};
+ checkAchievements();
+ showToast(next.name+" unlocked.");
+ showUpgrades();
+ updateUI();
+}
+
+
+function clearLivingRun(){
+ state.realPop=2;
+ state.slime=0;
+ // lifetime counters stay intact across species resets.
+ state.upgrades={rich:0,slimy:0,warm:0,calcium:0};
+ state.foodTier=0;
+ state.foodUp={potency:0,duration:0};
+ state.eggProgress=0;
+ feedCooldown=0;
+ activeFood=null;
+ snailLayer.innerHTML="";
+ foodLayer.innerHTML="";
+ eggLayer.innerHTML="";
+ snails=[];
+ syncVisible();
+ updateUI();
+}
+
+function unlockRamshorn(){
+ if(state.unlockedRamshorn)return;
+ const cost=10000000;
+ if(state.slime<cost){showToast("Not enough slime.");return}
+ state.unlockedRamshorn=true;
+ checkAchievements();
+ state.slimeBonus=Math.max(state.slimeBonus,1.20);
+ clearLivingRun();
+ save();
+ showToast("The colony respects your sacrifice. +1.15 slime production.");
+ showUpgrades();
+}
+
+
+function unlockMTS(){
+ if(state.unlockedMTS)return;
+ if(!state.unlockedRamshorn){showToast("Unlock ramshorns first.");return}
+ const cost=100000000;
+ if(state.slime<cost){showToast("Not enough slime.");return}
+ state.unlockedMTS=true;
+ checkAchievements();
+ state.slimeBonus=Math.max(state.slimeBonus,1.45);state.condition=45;
+ clearLivingRun();
+ save();
+ showToast("MTS unlocked. The substrate has opinions now.");
+ showUpgrades();
+}
+
+function unlockMystery(){
+ if(state.unlockedMystery)return;
+ if(!state.unlockedMTS){showToast("Unlock MTS first.");return}
+ const cost=1000000000;
+ if(state.slime<cost){showToast("Not enough slime.");return}
+ state.unlockedMystery=true;
+ checkAchievements();
+ state.slimeBonus=Math.max(state.slimeBonus,1.90);state.condition=65;
+ clearLivingRun();
+ save();
+ showToast("Mystery snails unlocked. Very fancy. Very slow.");
+ showUpgrades();
+}
+
+const ACHIEVEMENTS=[
+ {id:"pop1",cat:"Population",name:"A Small Problem",req:"Reach 1M snails",flavor:"It already feels like too many.",check:()=>state.highestPop>=1e6},
+ {id:"pop2",cat:"Population",name:"Wet Arithmetic",req:"Reach 10M snails",flavor:"The numbers start multiplying faster than your concern.",check:()=>state.highestPop>=1e7},
+ {id:"pop3",cat:"Population",name:"The Glass Moves",req:"Reach 100M snails",flavor:"You could have stopped here.",check:()=>state.highestPop>=1e8},
+ {id:"pop4",cat:"Population",name:"Carpeted",req:"Reach 1B snails",flavor:"The substrate disappears first.",check:()=>state.highestPop>=1e9},
+ {id:"pop5",cat:"Population",name:"Breathing Colony",req:"Reach 10B snails",flavor:"The tank feels warm now.",check:()=>state.highestPop>=1e10},
+ {id:"pop6",cat:"Population",name:"Bad Decision Habitat",req:"Reach 100B snails",flavor:"Every surface develops intent.",check:()=>state.highestPop>=1e11},
+ {id:"pop7",cat:"Population",name:"Overflowing",req:"Reach 1T snails",flavor:"The colony no longer respects boundaries.",check:()=>state.highestPop>=1e12},
+ {id:"pop8",cat:"Population",name:"Biomass",req:"Reach 10T snails",flavor:"Individuality was a temporary condition.",check:()=>state.highestPop>=1e13},
+ {id:"pop9",cat:"Population",name:"Compression Artifact",req:"Reach 100T snails",flavor:"The colony renders as a texture now.",check:()=>state.highestPop>=1e14},
+ {id:"pop10",cat:"Population",name:"The Creep",req:"Reach 1Qa snails",flavor:"There is no tank anymore. Only snail.",check:()=>state.highestPop>=1e15},
+ {id:"slime1",cat:"Slime",name:"Sticky Fingers",req:"Earn 10M slime",flavor:"Progress leaves residue.",check:()=>state.totalSlimeEarned>=1e7},
+ {id:"slime2",cat:"Slime",name:"Glass Coated",req:"Earn 100M slime",flavor:"The colony thanks you by ruining visibility.",check:()=>state.totalSlimeEarned>=1e8},
+ {id:"slime3",cat:"Slime",name:"Industrial Secretion",req:"Earn 1B slime",flavor:"This probably violates something.",check:()=>state.totalSlimeEarned>=1e9},
+ {id:"slime4",cat:"Slime",name:"Biofilm Economy",req:"Earn 10B slime",flavor:"Money would be less disgusting.",check:()=>state.totalSlimeEarned>=1e10},
+ {id:"slime5",cat:"Slime",name:"Impossible Moisture",req:"Earn 100B slime",flavor:"The room smells different.",check:()=>state.totalSlimeEarned>=1e11},
+ {id:"slime6",cat:"Slime",name:"Reservoir",req:"Earn 1T slime",flavor:"The tank develops weather.",check:()=>state.totalSlimeEarned>=1e12},
+ {id:"slime7",cat:"Slime",name:"Viscous Empire",req:"Earn 10T slime",flavor:"You built this instead of resting.",check:()=>state.totalSlimeEarned>=1e13},
+ {id:"slime8",cat:"Slime",name:"Blackwater Market",req:"Earn 100T slime",flavor:"The colony could purchase governments.",check:()=>state.totalSlimeEarned>=1e14},
+ {id:"slime9",cat:"Slime",name:"The Reserve Below",req:"Earn 1Qa slime",flavor:"The substrate remembers every feeding.",check:()=>state.totalSlimeEarned>=1e15},
+ {id:"slime10",cat:"Slime",name:"Liquidity Event",req:"Earn 10Qa slime",flavor:"Economics failed long before the glass did.",check:()=>state.totalSlimeEarned>=1e16},
+ {id:"feed1",cat:"Feeding",name:"Dinner Bell",req:"Feed once",flavor:"They noticed immediately.",check:()=>state.totalFeeds>=1},
+ {id:"feed2",cat:"Feeding",name:"Routine",req:"Feed 25 times",flavor:"You have become part of the ecosystem.",check:()=>state.totalFeeds>=25},
+ {id:"feed3",cat:"Feeding",name:"Caretaker",req:"Feed 100 times",flavor:"The colony expects consistency.",check:()=>state.totalFeeds>=100},
+ {id:"feed4",cat:"Feeding",name:"Green Disc",req:"Unlock wafers",flavor:"The water darkens around it.",check:()=>state.foodTier>=2},
+ {id:"feed5",cat:"Feeding",name:"Blood Price",req:"Unlock bloodworms",flavor:"Protein changes behavior.",check:()=>state.foodTier>=3},
+ {id:"feed6",cat:"Feeding",name:"Spiritual Feeding",req:"Unlock souls",flavor:"Some mechanics should remain theoretical.",check:()=>state.foodTier>=4},
+ {id:"up1",cat:"Upgrades",name:"Warmer Waters",req:"Buy 100 Warm Water upgrades",flavor:"The colony no longer experiences winter.",check:()=>state.upgrades.warm>=100},
+ {id:"up2",cat:"Upgrades",name:"Rich Beyond Reason",req:"Buy 100 Rich Substrate upgrades",flavor:"The floor itself becomes fertile.",check:()=>state.upgrades.rich>=100},
+ {id:"up3",cat:"Upgrades",name:"Permanent Residue",req:"Buy 100 Slimy Glass upgrades",flavor:"Cleaning is now hypothetical.",check:()=>state.upgrades.slimy>=100},
+ {id:"up4",cat:"Upgrades",name:"Bone Yard",req:"Max Calcium",flavor:"The shells harden faster than your resolve.",check:()=>state.upgrades.calcium>=8},
+ {id:"up5",cat:"Upgrades",name:"Optimization Spiral",req:"Buy 500 total upgrades",flavor:"Every number feeds another number.",check:()=>state.totalUpgrades>=500},
+ {id:"up6",cat:"Upgrades",name:"Industrialized",req:"Buy 2,500 total upgrades",flavor:"The colony becomes infrastructure.",check:()=>state.totalUpgrades>=2500},
+ {id:"sp1",cat:"Species",name:"Spiral",req:"Unlock Ramshorns",flavor:"The colony becomes decorative.",check:()=>state.unlockedRamshorn},
+ {id:"sp2",cat:"Species",name:"Needles",req:"Unlock MTS",flavor:"Something sharp enters the substrate.",check:()=>state.unlockedMTS},
+ {id:"sp3",cat:"Species",name:"Gold Shells",req:"Unlock Mystery Snails",flavor:"Luxury arrives after collapse.",check:()=>state.unlockedMystery},
+ {id:"sp4",cat:"Species",name:"Mixed Colony",req:"Unlock all species",flavor:"An accidental civilization.",check:()=>state.unlockedRamshorn&&state.unlockedMTS&&state.unlockedMystery},
+ {id:"water1",cat:"Water",name:"Cloudy",req:"Reach 100B snails",flavor:"Visibility becomes optional.",check:()=>state.highestPop>=1e11},
+ {id:"water2",cat:"Water",name:"Murky",req:"Reach 100T snails",flavor:"The water absorbs light.",check:()=>state.highestPop>=1e14},
+ {id:"water3",cat:"Water",name:"Pea Soup",req:"Reach 100Qa snails",flavor:"The colony lives by faith alone.",check:()=>state.highestPop>=1e17},
+ {id:"meta1",cat:"Collapse",name:"Glass Failure",req:"Collapse a tank",flavor:"Containment was always temporary.",check:()=>state.collapses>=1},
+ {id:"meta2",cat:"Collapse",name:"Repeat Offender",req:"Collapse 4 tanks",flavor:"At this point the warranty is meaningless.",check:()=>state.collapses>=4},
+ {id:"mut1",cat:"Mutation",name:"Wrong On Purpose",req:"Buy a mutation",flavor:"Selective breeding has left the building.",check:()=>Object.values(state.mutations||{}).reduce((a,b)=>a+b,0)>=1},
+ {id:"mut2",cat:"Mutation",name:"Colony Intelligence",req:"Evolve Colony Mind",flavor:"It has begun making eye contact.",check:()=>state.mutations?.mind>=1},
+ {id:"tank1",cat:"Tanks",name:"Retail Abandonment",req:"Unlock Abandoned Store Tank",flavor:"The lease ended. The snails did not.",check:()=>!!state.unlockedTanks?.abandoned},
+ {id:"time1",cat:"Time",name:"Containment Breach",req:"Play for 3 hours",flavor:"You kept watching.",check:()=>Date.now()-(state.createdAt||Date.now())>=10800000}
+];
+let achQueue=[],achShowing=false;
+function showAchievementPopup(a){
+ achQueue.push(a);
+ if(achShowing)return;
+ nextAchievementPopup();
+}
+function nextAchievementPopup(){
+ const a=achQueue.shift();
+ if(!a){achShowing=false;return;}
+ achShowing=true;
+ const box=$("achPopup");
+ box.innerHTML=`<div class="achHead">ACHIEVEMENT</div><div class="achName">${a.name}</div><div class="achFlavor">“${a.flavor}”</div>`;
+ box.classList.add("show");
+ setTimeout(()=>box.classList.remove("show"),2600);
+ setTimeout(nextAchievementPopup,3300);
+}
+function checkAchievements(){
+ if(!state.achievements)state.achievements={};
+ for(const a of ACHIEVEMENTS){
+  if(!state.achievements[a.id] && a.check()){
+   state.achievements[a.id]=Date.now();
+   showAchievementPopup(a);
+  }
+ }
+}
+function achievementListHTML(){
+ let html="";
+ let last="";
+ for(const a of ACHIEVEMENTS){
+  if(a.cat!==last){last=a.cat;html+=`<div class="sectionTitle">${a.cat.toUpperCase()}</div>`;}
+  const unlocked=!!state.achievements?.[a.id];
+  html+=`<div class="achRow ${unlocked?'':'locked'}"><b>${unlocked?'✓ ':'○ '}${a.name}</b><div class="achReq">${a.req}</div><div class="flavor">“${a.flavor}”</div></div>`;
+ }
+ return html;
+}
+
+function showAchievements(){
+ $("panelTitle").textContent="ACHIEVEMENTS";
+ modal.classList.add("show");
+ const unlocked=Object.keys(state.achievements||{}).length;
+ content.innerHTML=`
+ <div class="statGrid">
+  <div class="statCard"><b>UNLOCKED</b><span>${unlocked}/${ACHIEVEMENTS.length}</span></div>
+  <div class="statCard"><b>SLIME / SEC</b><span>${fmt(slimePerSecond())}</span></div>
+  <div class="statCard"><b>GROWTH / SEC</b><span>${fmt(state.realPop*breedingRate())}</span></div>
+  <div class="statCard"><b>HIGHEST POP</b><span>${fmt(state.highestPop||state.realPop)}</span></div>
+ </div>
+ ${achievementListHTML()}`;
+}
+
+function showStats(){
+ $("panelTitle").textContent="STATS";
+ modal.classList.add("show");
+ const runtime=Date.now()-(state.createdAt||Date.now());
+ const h=Math.floor(runtime/3600000),m=Math.floor((runtime%3600000)/60000);
+ const unlocked=Object.keys(state.achievements||{}).length;
+ content.innerHTML=`
+ <div class="statGrid">
+  <div class="statCard"><b>POPULATION</b><span>${fmt(state.realPop)}</span></div>
+  <div class="statCard"><b>SLIME</b><span>${fmt(state.slime)}</span></div>
+  <div class="statCard"><b>SLIME / SEC</b><span>${fmt(slimePerSecond())}</span></div>
+  <div class="statCard"><b>GROWTH / SEC</b><span>${fmt(state.realPop*breedingRate())}</span></div>
+  <div class="statCard"><b>HIGHEST POP</b><span>${fmt(state.highestPop||state.realPop)}</span></div>
+  <div class="statCard"><b>TOTAL SLIME</b><span>${fmt(state.totalSlimeEarned||0)}</span></div>
+  <div class="statCard"><b>SPECIES</b><span>${currentSpecies().toUpperCase()}</span></div>
+  <div class="statCard"><b>ACHIEVEMENTS</b><span>${unlocked}/${ACHIEVEMENTS.length}</span></div>
+ </div>
+ <div class="statLine"><b>Exact Population:</b> ${fullFmt(state.realPop)}</div>
+ <div class="statLine"><b>Exact Slime:</b> ${fullFmt(state.slime)}</div>
+ <div class="statLine"><b>Current Food:</b> ${currentFood().name} • +${Math.round(foodPotency()*100)}% reproduction • ${(foodDuration()/1000).toFixed(1)}s</div>
+ <div class="statLine"><b>Run Time:</b> ${h}h ${m}m</div>
+ <div class="statLine"><b>Feeds:</b> ${state.totalFeeds} • <b>Total Upgrades:</b> ${fmt(state.totalUpgrades||0)}</div>
+ <div class="statLine"><b>Species:</b> Ramshorn ${state.unlockedRamshorn?'✓':'○'} • MTS ${state.unlockedMTS?'✓':'○'} • Mystery ${state.unlockedMystery?'✓':'○'}</div>
+ <div class="statLine"><b>Build:</b> Expanded v16</div>
+ ${achievementListHTML()}`;
+}
+
+function showUpgrades(){
+ $("panelTitle").textContent="UPGRADES";
+ modal.classList.add("show");
+ const u=state.upgrades, f=currentFood(), next=foods[state.foodTier+1];
+
+ content.innerHTML=`
+ <div class="sectionTitle">TANK UPGRADES</div>
+
+ <div class="statLine"><b>RICH SUBSTRATE</b><br>
+ Lv ${u.rich} • Cost: ${fmt(upgradeCost(1000,1.25,u.rich))}<br>
+ <div class="effect">Effect: More reproduction over time. Current: +${Math.round(u.rich*12)}% breeding rate.</div>
+ <div class="flavor">"The glass smells like rain now."</div>
+ <button class="buyBtn" onclick="buyUpgrade('rich')">BUY</button></div>
+
+ <div class="statLine"><b>SLIMY GLASS</b><br>
+ Lv ${u.slimy} • Cost: ${fmt(upgradeCost(1500,1.4,u.slimy))}<br>
+ <div class="effect">Effect: More slime from every snail. Current: +${Math.round(u.slimy*15)}% slime production.</div>
+ <div class="flavor">"The colony leaves more behind than before."</div>
+ <button class="buyBtn" onclick="buyUpgrade('slimy')">BUY</button></div>
+
+ <div class="statLine"><b>WARM WATER</b><br>
+ Lv ${u.warm} • Cost: ${fmt(upgradeCost(500,1.18,u.warm))}<br>
+ <div class="effect">Effect: Warmer water speeds movement, breeding, and feeding recovery. Current: +${Math.round(u.warm*6)}% movement.</div>
+ <div class="flavor">"The tank no longer cools at night."</div>
+ <button class="buyBtn" onclick="buyUpgrade('warm')">BUY</button></div>
+
+ <div class="statLine"><b>CALCIUM</b><br>
+ Lv ${u.calcium}/8 • Cost: ${u.calcium>=8?'<span class="maxed">MAX</span>':fmt(upgradeCost(250000,4,u.calcium))}<br>
+ <div class="effect">Effect: More direct reproduction. Current: +${Math.round(u.calcium*8)}% reproduction rate.</div>
+ <div class="flavor">"The shells arrive sooner now."</div>
+ <button class="buyBtn" ${u.calcium>=8?'disabled':''} onclick="buyUpgrade('calcium')">BUY</button></div>
+
+
+ <div class="sectionTitle">SPECIES UNLOCK</div>
+
+ <div class="statLine"><b>RAMSHORNS</b><br>
+ ${state.unlockedRamshorn?'<span class="maxed">UNLOCKED • x1.15 slime production</span>':'Cost: 10.00M slime'}<br>
+ <div class="effect">Effect: Resets the run and permanently increases slime production.</div>
+ <div class="flavor">"The colony respects your sacrifice."</div>
+ <button class="buyBtn" ${state.unlockedRamshorn?'disabled':''} onclick="unlockRamshorn()">UNLOCK + RESET</button></div>
+
+ <div class="statLine"><b>MTS</b><br>
+ ${state.unlockedMTS?'<span class="maxed">UNLOCKED • x1.35 slime production</span>':(state.unlockedRamshorn?'Cost: 100.00M slime':'Locked until Ramshorns')}<br>
+ <div class="effect">Effect: Resets the run, switches species, and increases slime production.</div>
+ <div class="flavor">"The substrate starts moving. That is rarely comforting."</div>
+ <button class="buyBtn" ${state.unlockedMTS || !state.unlockedRamshorn?'disabled':''} onclick="unlockMTS()">UNLOCK + RESET</button></div>
+
+ <div class="statLine"><b>MYSTERY SNAILS</b><br>
+ ${state.unlockedMystery?'<span class="maxed">UNLOCKED • x1.70 slime production</span>':(state.unlockedMTS?'Cost: 1.00B slime':'Locked until MTS')}<br>
+ <div class="effect">Effect: Resets the run, switches species, and increases slime production.</div>
+ <div class="flavor">"Large, ornate, and absolutely not paying rent."</div>
+ <button class="buyBtn" ${state.unlockedMystery || !state.unlockedMTS?'disabled':''} onclick="unlockMystery()">UNLOCK + RESET</button></div>
+
+ <div class="sectionTitle">FOOD</div>
+
+ <div class="statLine"><b>CURRENT FOOD: ${f.name.toUpperCase()}</b><br>
+ <div class="effect">Feed boost: +${Math.round(foodPotency()*100)}% reproduction while active. Duration: ${(foodDuration()/1000).toFixed(1)}s.</div>
+ <div class="flavor">"${f.flavor}"</div></div>
+
+ <div class="statLine"><b>FOOD POTENCY</b><br>
+ Lv ${state.foodUp.potency}/5 • Cost: ${state.foodUp.potency>=5?'<span class="maxed">MAX</span>':fmt(foodCost('potency'))}<br>
+ <div class="effect">Effect: Current food increases reproduction more.</div>
+ <button class="buyBtn" ${state.foodUp.potency>=5?'disabled':''} onclick="buyFoodUpgrade('potency')">BUY</button></div>
+
+ <div class="statLine"><b>FOOD DURATION</b><br>
+ Lv ${state.foodUp.duration}/5 • Cost: ${state.foodUp.duration>=5?'<span class="maxed">MAX</span>':fmt(foodCost('duration'))}<br>
+ <div class="effect">Effect: Current food stays active longer.</div>
+ <button class="buyBtn" ${state.foodUp.duration>=5?'disabled':''} onclick="buyFoodUpgrade('duration')">BUY</button></div>
+
+ <div class="statLine"><b>NEXT FOOD</b><br>
+ ${next?`${next.name.toUpperCase()} • Unlock Cost: ${fmt(next.unlock)}<br><div class="flavor">"${next.flavor}"</div><button class="buyBtn" onclick="unlockNextFood()">UNLOCK</button>`:'<span class="maxed">All food tiers unlocked.</span>'}
+ </div>
+ `;
+}
+
+
+function setCareMode(mode){state.careMode=mode;showToast(mode==="neglect"?"You stop pretending to clean.":mode==="clean"?"Maintenance begins.":"The tank is left mostly alone.");showUpgrades();save()}
+function mutationHTML(){
+ if(!state.unlockedMystery)return '<div class="statLine"><span class="maxed">Locked until Mystery Snails.</span><div class="flavor">"First the colony must become respectable. Then it can become wrong."</div></div>';
+ return Object.entries(MUTATIONS).map(([id,m])=>{const l=state.mutations[id]||0,c=mutationCost(id),max=l>=m.max;return `<div class="statLine"><b>${m.name.toUpperCase()}</b> • Lv ${l}/${m.max}<br><div class="effect">${m.desc}</div><div class="flavor">Requires toxic water (70%+) • ${max?'MAX':fmt(c)+' slime'}</div><button class="buyBtn" ${max||state.condition<70?'disabled':''} onclick="buyMutation('${id}')">MUTATE</button></div>`}).join('');
+}
+function buyMutation(id){
+ const m=MUTATIONS[id],l=state.mutations[id]||0;if(!m||l>=m.max)return;
+ if(state.condition<70){showToast("The water is not toxic enough.");return}
+ const c=mutationCost(id);if(state.slime<c){showToast("Not enough slime.");return}
+ state.slime-=c;state.mutations[id]=l+1;state.condition=clamp(state.condition+4,0,100);showToast(m.name+" expressed.");save();showUpgrades();
+}
+function evolutionHTML(){
+ return Object.entries(EVOS).map(([id,e])=>{const l=state.evolution[id]||0,c=evoCost(id);return `<div class="statLine"><b>${e.name.toUpperCase()}</b> • Lv ${l}<br><div class="effect">${e.desc}</div><div class="flavor">Cost: ${c} Biomass</div><button class="buyBtn" ${(state.biomass||0)<c?'disabled':''} onclick="buyEvolution('${id}')">EVOLVE</button></div>`}).join('');
+}
+function buyEvolution(id){const c=evoCost(id);if((state.biomass||0)<c)return;state.biomass-=c;state.evolution[id]=(state.evolution[id]||0)+1;showToast(EVOS[id].name+" evolved.");save();showUpgrades()}
+function unlockTankRewards(){
+ if(state.collapses>=1)state.unlockedTanks.blackwater=true;
+ if(state.collapses>=2)state.unlockedTanks.breeder=true;
+ if(state.collapses>=4)state.unlockedTanks.abandoned=true;
+}
+function tankHTML(){unlockTankRewards();return Object.entries(TANKS).map(([id,x])=>{const unlocked=!!state.unlockedTanks[id],active=state.tankType===id;return `<div class="statLine"><b>${x.name.toUpperCase()}</b>${active?' • <span class="maxed">ACTIVE</span>':''}<br><div class="effect">${x.desc}</div><div class="flavor">${unlocked?'Unlocked':id==='blackwater'?'Collapse once':id==='breeder'?'Collapse twice':'Collapse four times'}</div><button class="buyBtn" ${!unlocked||active?'disabled':''} onclick="selectTank('${id}')">USE TANK</button></div>`}).join('')}
+function selectTank(id){if(!state.unlockedTanks[id])return;state.tankType=id;showToast(TANKS[id].name+" selected.");save();showUpgrades()}
+function collapseTank(){
+ if(!state.unlockedMystery||state.realPop<1e15){showToast("The colony is not ready to collapse.");return}
+ const gain=collapseReward();state.biomass=(state.biomass||0)+gain;state.totalBiomass=(state.totalBiomass||0)+gain;state.collapses=(state.collapses||0)+1;
+ unlockTankRewards();
+ const carry=Math.floor((state.evolution.retention||0)*250000);
+ clearLivingRun();state.slime=carry;state.condition=20;state.careMode="balanced";
+ showToast("Tank collapsed. +"+gain+" Biomass.");save();showUpgrades();
+}
+function triggerEvent(){
+ if(!state.unlockedRamshorn)return;
+ const events=[
+  {name:"ALGAE BLOOM",text:"The glass greens overnight.",a:"HARVEST",b:"SCRUB",af:()=>{state.slime+=slimePerSecond()*90;state.condition=clamp(state.condition+14,0,100)},bf:()=>{state.condition=clamp(state.condition-18,0,100)}},
+  {name:"EGG BOOM",text:"Every surface is suddenly dotted with clutches.",a:"LET THEM HATCH",b:"REMOVE SOME",af:()=>{state.realPop*=1.18;state.condition=clamp(state.condition+8,0,100)},bf:()=>{state.slime+=slimePerSecond()*45;state.condition=clamp(state.condition-5,0,100)}},
+  {name:"FILTER FAILURE",text:"The water goes still. The colony does not.",a:"IGNORE IT",b:"REPAIR",af:()=>{state.condition=clamp(state.condition+20,0,100);state.slime+=slimePerSecond()*60},bf:()=>{state.slime=Math.max(0,state.slime-slimePerSecond()*25);state.condition=clamp(state.condition-12,0,100)}},
+  {name:"MYSTERY ORGANISM",text:"Something translucent moves beneath the substrate.",a:"KEEP IT",b:"REMOVE IT",af:()=>{state.condition=clamp(state.condition+12,0,100);state.eggProgress+=Math.max(10,state.realPop*.05)},bf:()=>{state.slime+=slimePerSecond()*75}}
+ ];
+ const ev=events[Math.floor(Math.random()*events.length)];state.eventSeen=(state.eventSeen||0)+1;
+ $("panelTitle").textContent=ev.name;modal.classList.add("show");
+ content.innerHTML=`<div class="statLine"><b>${ev.text}</b><div class="flavor">"The tank has developed a situation."</div><div class="choiceRow"><button class="buyBtn" id="eventA">${ev.a}</button><button class="buyBtn" id="eventB">${ev.b}</button></div></div>`;
+ $("eventA").onclick=()=>{ev.af();modal.classList.remove("show");showToast(ev.a+".");save()};
+ $("eventB").onclick=()=>{ev.bf();modal.classList.remove("show");showToast(ev.b+".");save()};
+}
+function applyOfflineProgress(){
+ const now=Date.now(),elapsed=Math.min(8*3600,Math.max(0,(now-(state.lastSave||now))/1000));
+ if(elapsed<30)return;
+ const eff=Math.min(1,.35+(state.mutations.dormant||0)*.15+(state.evolution.offline||0)*.20);
+ const startPop=state.realPop;
+ const r=breedingRate()*eff;
+ const growth=Math.exp(Math.min(24,r*elapsed));
+ state.realPop=Math.max(state.realPop,state.realPop*growth);
+ const avg=(startPop+state.realPop)/2;
+ const slimeRatePerSnail=slimePerSecond()/Math.max(1,state.realPop);
+ const gain=avg*slimeRatePerSnail*elapsed*eff;
+ state.slime+=gain;state.totalSlimeEarned+=gain;state.highestPop=Math.max(state.highestPop,state.realPop);
+ state.condition=clamp((state.condition||20)+elapsed/3600*2.5,0,100);
+ setTimeout(()=>showToast("Away "+Math.floor(elapsed/3600)+"h "+Math.floor((elapsed%3600)/60)+"m • +"+fmt(gain)+" slime"),500);
+}
+
+function hardReset(){
+ localStorage.removeItem(SAVE_KEY);
+ location.reload();
+}
+
+$("feed").onclick=dropFood;
+$("upgradesBtn").onclick=showUpgrades;
+$("achievementsBtn").onclick=showAchievements;
+$("topStats").onclick=showStats;
+$("topStats2").onclick=showStats;
+$("topMini").onclick=showStats;
+$("close").onclick=()=>modal.classList.remove("show");
+
+
+
+/* Hold-to-buy for upgrade buttons. Uses the button action string, not the DOM node,
+   because the upgrades panel redraws itself after every purchase like a needy little stage prop. */
+let holdBuyTimer=null;
+let holdBuyDelay=null;
+let holdBuyAction=null;
+function runHoldAction(){
+ if(!holdBuyAction)return;
+ try{ Function(holdBuyAction)(); }catch(err){ console.log(err); stopHoldBuy(); }
+}
+function stopHoldBuy(){
+ if(holdBuyDelay){clearTimeout(holdBuyDelay);holdBuyDelay=null;}
+ if(holdBuyTimer){clearInterval(holdBuyTimer);holdBuyTimer=null;}
+ holdBuyAction=null;
+}
+document.addEventListener("pointerdown",function(e){
+ const b=e.target.closest(".buyBtn");
+ if(!b || b.disabled)return;
+ const action=b.getAttribute("onclick");
+ if(!action)return;
+ stopHoldBuy();
+ holdBuyAction=action;
+ holdBuyDelay=setTimeout(function(){
+  runHoldAction();
+  holdBuyTimer=setInterval(runHoldAction,110);
+ },260);
+ e.preventDefault();
+},{passive:false});
+document.addEventListener("pointerup",stopHoldBuy,{passive:true});
+document.addEventListener("pointercancel",stopHoldBuy,{passive:true});
+document.addEventListener("pointerleave",stopHoldBuy,{passive:true});
+document.addEventListener("touchend",stopHoldBuy,{passive:true});
+
+
+applyOfflineProgress();syncVisible();updateUI();checkAchievements();moveSnails();setInterval(gameTick,260);setInterval(safeSave,5000);
+</script>
+
+</body>
+</html>

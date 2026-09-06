@@ -252,6 +252,7 @@ background:rgba(196,229,91,.16);
 .metaCard{padding:10px;border:1px solid rgba(142,214,63,.22);border-radius:12px;background:rgba(0,0,0,.18)}
 .metaCard b{color:#b8ee78}.tiny{font-size:11px;opacity:.78;line-height:1.35}
 .choiceRow{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.choiceRow .buyBtn{flex:1;min-width:92px}
+.buyBtn.selected{background:#315719;color:#e8ffc9;border-color:#8ed63f;box-shadow:inset 0 0 10px rgba(142,214,63,.18)}
 .progressTrack{height:9px;background:rgba(0,0,0,.45);border-radius:9px;overflow:hidden;margin:7px 0}
 .progressFill{height:100%;background:linear-gradient(90deg,#7aaa35,#d7a62d);transition:width .25s}
 .dangerFill{background:linear-gradient(90deg,#b4cf38,#8c4a22)}
@@ -916,11 +917,36 @@ function showUpgrades(){
  <div class="statLine"><b>NEXT FOOD</b><br>
  ${next?`${next.name.toUpperCase()} • Unlock Cost: ${fmt(next.unlock)}<br><div class="flavor">"${next.flavor}"</div><button class="buyBtn" onclick="unlockNextFood()">UNLOCK</button>`:'<span class="maxed">All food tiers unlocked.</span>'}
  </div>
+
+ <div class="sectionTitle">CARE MODE</div>
+ <div class="statLine"><b>${conditionEffects().label} WATER • ${Math.round(state.condition||0)}%</b><br>
+ <div class="effect">Clean water favors breeding. Murky and toxic water produce more slime. Mutations require Mystery Snails and TOXIC water at 70% or higher.</div>
+ <div class="choiceRow">
+ <button class="buyBtn ${state.careMode==='clean'?'selected':''}" onclick="setCareMode('clean')">CLEAN</button>
+ <button class="buyBtn ${state.careMode==='balanced'?'selected':''}" onclick="setCareMode('balanced')">BALANCED</button>
+ <button class="buyBtn ${state.careMode==='neglect'?'selected':''}" onclick="setCareMode('neglect')">NEGLECT</button>
+ </div>
+ <div class="flavor">Neglect raises tank condition over time. Feeding, population pressure, and some events can also make the water more toxic.</div></div>
+
+ <div class="sectionTitle">MUTATIONS</div>
+ ${mutationHTML()}
+
+ <div class="sectionTitle">TANK COLLAPSE</div>
+ <div class="statLine"><b>${state.unlockedMystery?'COLONY PRESSURE':'LOCKED UNTIL MYSTERY SNAILS'}</b><br>
+ <div class="effect">Current population: ${fmt(state.realPop)} / 1Qa • Reward: ${collapseReward()} Biomass</div>
+ <div class="flavor">Collapse resets the living run, food, ordinary upgrades, condition, and care mode. Species, mutations, evolution, achievements, lifetime totals, Biomass, and unlocked tanks remain.</div>
+ <button class="buyBtn" ${!state.unlockedMystery||state.realPop<1e15?'disabled':''} onclick="collapseTank()">COLLAPSE TANK +${collapseReward()} BIOMASS</button></div>
+
+ <div class="sectionTitle">EVOLUTION • ${fmt(state.biomass||0)} BIOMASS</div>
+ ${evolutionHTML()}
+
+ <div class="sectionTitle">TANKS • ${state.collapses||0} COLLAPSES</div>
+ ${tankHTML()}
  `;
 }
 
 
-function setCareMode(mode){state.careMode=mode;showToast(mode==="neglect"?"You stop pretending to clean.":mode==="clean"?"Maintenance begins.":"The tank is left mostly alone.");showUpgrades();save()}
+function setCareMode(mode){if(!["clean","balanced","neglect"].includes(mode))return;state.careMode=mode;showToast(mode==="neglect"?"You stop pretending to clean.":mode==="clean"?"Maintenance begins.":"The tank is left mostly alone.");save();showUpgrades();updateUI()}
 function mutationHTML(){
  if(!state.unlockedMystery)return '<div class="statLine"><span class="maxed">Locked until Mystery Snails.</span><div class="flavor">"First the colony must become respectable. Then it can become wrong."</div></div>';
  return Object.entries(MUTATIONS).map(([id,m])=>{const l=state.mutations[id]||0,c=mutationCost(id),max=l>=m.max;return `<div class="statLine"><b>${m.name.toUpperCase()}</b> • Lv ${l}/${m.max}<br><div class="effect">${m.desc}</div><div class="flavor">Requires toxic water (70%+) • ${max?'MAX':fmt(c)+' slime'}</div><button class="buyBtn" ${max||state.condition<70?'disabled':''} onclick="buyMutation('${id}')">MUTATE</button></div>`}).join('');
@@ -929,26 +955,28 @@ function buyMutation(id){
  const m=MUTATIONS[id],l=state.mutations[id]||0;if(!m||l>=m.max)return;
  if(state.condition<70){showToast("The water is not toxic enough.");return}
  const c=mutationCost(id);if(state.slime<c){showToast("Not enough slime.");return}
- state.slime-=c;state.mutations[id]=l+1;state.condition=clamp(state.condition+4,0,100);showToast(m.name+" expressed.");save();showUpgrades();
+ state.slime-=c;state.mutations[id]=l+1;state.condition=clamp(state.condition+4,0,100);checkAchievements();showToast(m.name+" expressed.");save();showUpgrades();updateUI();
 }
 function evolutionHTML(){
  return Object.entries(EVOS).map(([id,e])=>{const l=state.evolution[id]||0,c=evoCost(id);return `<div class="statLine"><b>${e.name.toUpperCase()}</b> • Lv ${l}<br><div class="effect">${e.desc}</div><div class="flavor">Cost: ${c} Biomass</div><button class="buyBtn" ${(state.biomass||0)<c?'disabled':''} onclick="buyEvolution('${id}')">EVOLVE</button></div>`}).join('');
 }
-function buyEvolution(id){const c=evoCost(id);if((state.biomass||0)<c)return;state.biomass-=c;state.evolution[id]=(state.evolution[id]||0)+1;showToast(EVOS[id].name+" evolved.");save();showUpgrades()}
+function buyEvolution(id){if(!EVOS[id])return;const c=evoCost(id);if((state.biomass||0)<c)return;state.biomass-=c;state.evolution[id]=(state.evolution[id]||0)+1;showToast(EVOS[id].name+" evolved.");save();showUpgrades();updateUI()}
 function unlockTankRewards(){
  if(state.collapses>=1)state.unlockedTanks.blackwater=true;
  if(state.collapses>=2)state.unlockedTanks.breeder=true;
  if(state.collapses>=4)state.unlockedTanks.abandoned=true;
 }
 function tankHTML(){unlockTankRewards();return Object.entries(TANKS).map(([id,x])=>{const unlocked=!!state.unlockedTanks[id],active=state.tankType===id;return `<div class="statLine"><b>${x.name.toUpperCase()}</b>${active?' • <span class="maxed">ACTIVE</span>':''}<br><div class="effect">${x.desc}</div><div class="flavor">${unlocked?'Unlocked':id==='blackwater'?'Collapse once':id==='breeder'?'Collapse twice':'Collapse four times'}</div><button class="buyBtn" ${!unlocked||active?'disabled':''} onclick="selectTank('${id}')">USE TANK</button></div>`}).join('')}
-function selectTank(id){if(!state.unlockedTanks[id])return;state.tankType=id;showToast(TANKS[id].name+" selected.");save();showUpgrades()}
+function selectTank(id){if(!TANKS[id]||!state.unlockedTanks[id])return;state.tankType=id;checkAchievements();showToast(TANKS[id].name+" selected.");save();showUpgrades();updateUI()}
 function collapseTank(){
  if(!state.unlockedMystery||state.realPop<1e15){showToast("The colony is not ready to collapse.");return}
- const gain=collapseReward();state.biomass=(state.biomass||0)+gain;state.totalBiomass=(state.totalBiomass||0)+gain;state.collapses=(state.collapses||0)+1;
+ const gain=collapseReward();
+ if(!confirm("Collapse this tank for "+gain+" Biomass?\n\nThis resets the current population, slime, food, ordinary upgrades, condition, and care mode. Permanent progression is preserved."))return;
+ state.biomass=(state.biomass||0)+gain;state.totalBiomass=(state.totalBiomass||0)+gain;state.collapses=(state.collapses||0)+1;
  unlockTankRewards();
  const carry=Math.floor((state.evolution.retention||0)*250000);
  clearLivingRun();state.slime=carry;state.condition=20;state.careMode="balanced";
- showToast("Tank collapsed. +"+gain+" Biomass.");save();showUpgrades();
+ checkAchievements();showToast("Tank collapsed. +"+gain+" Biomass.");save();showUpgrades();updateUI();
 }
 function triggerEvent(){
  if(!state.unlockedRamshorn)return;

@@ -307,6 +307,27 @@ document.addEventListener("gesturestart",function(e){e.preventDefault();});
 document.addEventListener("contextmenu",function(e){e.preventDefault();});
 
 const SAVE_KEY="creep_final_patch_v15";
+const MAX_GAME_NUMBER=1e300;
+function finiteNumber(value,fallback=0){
+ const n=Number(value);
+ return Number.isFinite(n)?Math.max(-MAX_GAME_NUMBER,Math.min(MAX_GAME_NUMBER,n)):fallback;
+}
+function safeAdd(a,b){return finiteNumber(finiteNumber(a)+finiteNumber(b),MAX_GAME_NUMBER)}
+function safeMultiply(...values){
+ let result=1;
+ for(const value of values){
+  const n=finiteNumber(value);
+  if(result===0||n===0)return 0;
+  if(Math.abs(result)>MAX_GAME_NUMBER/Math.abs(n))return Math.sign(result)*Math.sign(n)*MAX_GAME_NUMBER;
+  result*=n;
+ }
+ return finiteNumber(result,MAX_GAME_NUMBER);
+}
+function safeCost(base,scale,level){
+ const exponent=finiteNumber(level,0)*Math.log(scale)+Math.log(base);
+ if(!Number.isFinite(exponent)||exponent>=Math.log(MAX_GAME_NUMBER))return MAX_GAME_NUMBER;
+ return Math.min(MAX_GAME_NUMBER,Math.floor(Math.exp(exponent)));
+}
 const OLD_SAVE_KEYS=["creep_species_mobile_gross_v1","creep_mobile_food_holdbuy_v2","creep_mobile_food_holdbuy_v3","creep_mobile_perf_v4","creep_mobile_safe_perf_v5","creep_mobile_savekill_v6","creep_hotfix_v7","creep_hotfix_savekill_v8","creep_emergency_perf_v9","creep_noeggs_species_v10","creep_noeggs_species_v11"];
 for(const k of OLD_SAVE_KEYS){try{localStorage.removeItem(k);}catch(e){}}
 const $=id=>document.getElementById(id);
@@ -366,6 +387,12 @@ try{
   state.mutations={...stateDefault().mutations,...(loaded.mutations||{})};
   state.evolution={...stateDefault().evolution,...(loaded.evolution||{})};
   state.unlockedTanks={...stateDefault().unlockedTanks,...(loaded.unlockedTanks||{})};
+  for(const key of ["realPop","slime","totalEggs","totalFeeds","totalSlimeEarned","highestPop","totalUpgrades","biomass","totalBiomass","collapses","eggProgress"]){
+   state[key]=Math.max(0,finiteNumber(state[key],stateDefault()[key]||0));
+  }
+  for(const group of ["upgrades","foodUp","mutations","evolution"]){
+   for(const key of Object.keys(state[group]))state[group][key]=Math.max(0,Math.floor(finiteNumber(state[group][key],0)));
+  }
   if(!state.highestPop)state.highestPop=state.realPop||2;
   if(!state.totalSlimeEarned)state.totalSlimeEarned=0;
   if(!state.totalUpgrades)state.totalUpgrades=0;
@@ -429,18 +456,18 @@ function conditionEffects(){
  return {breed:.90,slime:1.60*(1+(state.mutations.toxic||0)*.20),mut:1.8,label:"TOXIC"};
 }
 function mutationMult(){
- return (1+(state.mutations.shell||0)*.10)*(1+(state.mutations.mind||0)*.08);
+ return safeMultiply(1+(state.mutations.shell||0)*.10,1+(state.mutations.mind||0)*.08);
 }
 function slimeMutationMult(){
- return (1+(state.mutations.glands||0)*.18)*(1+(state.mutations.mind||0)*.08);
+ return safeMultiply(1+(state.mutations.glands||0)*.18,1+(state.mutations.mind||0)*.08);
 }
 function evoBreed(){return 1+(state.evolution.breed||0)*.15}
 function evoSlime(){return 1+(state.evolution.slime||0)*.20}
 function mutationCost(id){
  const m=MUTATIONS[id],lvl=state.mutations[id]||0;
- return Math.floor(m.base*Math.pow(3.1,lvl)*Math.pow(.88,state.evolution.mutation||0));
+ return Math.min(MAX_GAME_NUMBER,Math.floor(safeMultiply(safeCost(m.base,3.1,lvl),Math.pow(.88,state.evolution.mutation||0))));
 }
-function evoCost(id){const e=EVOS[id],lvl=state.evolution[id]||0;return Math.ceil(e.base*Math.pow(1.75,lvl))}
+function evoCost(id){const e=EVOS[id],lvl=state.evolution[id]||0;return Math.min(MAX_GAME_NUMBER,Math.ceil(safeCost(e.base,1.75,lvl)))}
 function collapseReward(){
  const popScore=Math.max(0,Math.log10(Math.max(1,state.highestPop))-12);
  const slimeScore=Math.max(0,Math.log10(Math.max(1,state.totalSlimeEarned))-12)*.45;
@@ -467,7 +494,7 @@ function breedingRate(){
 }
 function slimePerSecond(){
  const ce=conditionEffects(),td=tankData();
- return (state.realPop*0.12)*(1+state.upgrades.slimy*0.15)*state.slimeBonus*slimeMutationMult()*evoSlime()*ce.slime*td.slime;
+ return safeMultiply(state.realPop,.12,1+state.upgrades.slimy*.15,state.slimeBonus,slimeMutationMult(),evoSlime(),ce.slime,td.slime);
 }
 function showToast(t){toastEl.textContent=t;toastEl.style.opacity=1;setTimeout(()=>toastEl.style.opacity=0,1700)}
 
@@ -542,18 +569,18 @@ function addDirectBirths(){
  const births=Math.floor(state.eggProgress);
  if(births<=0)return;
  state.eggProgress-=births;
- state.realPop+=births;
- state.totalEggs+=births;
+ state.realPop=safeAdd(state.realPop,births);
+ state.totalEggs=safeAdd(state.totalEggs,births);
  syncVisible();
 }
 
 
 function gameTick(){
  const slimeGain=slimePerSecond()/5;
- state.slime+=slimeGain;
- state.totalSlimeEarned+=slimeGain;
+ state.slime=safeAdd(state.slime,slimeGain);
+ state.totalSlimeEarned=safeAdd(state.totalSlimeEarned,slimeGain);
  state.highestPop=Math.max(state.highestPop||0,state.realPop);
- state.eggProgress += state.realPop * breedingRate() / 5;
+ state.eggProgress=safeAdd(state.eggProgress,safeMultiply(state.realPop,breedingRate(),.2));
  addDirectBirths();
  const mode=state.careMode||"balanced";
  const logp=Math.max(0,Math.log10(Math.max(10,state.realPop))-4);
@@ -616,7 +643,7 @@ function updateUI(){
  if(feedCooldown<=0)feedTxt.textContent=currentFood().name.toUpperCase();
 }
 
-function upgradeCost(base,scale,lvl){return Math.floor(base*Math.pow(scale,lvl))}
+function upgradeCost(base,scale,lvl){return safeCost(base,scale,lvl)}
 function foodCost(type){
  if(type==="potency")return upgradeCost(currentFood().potBase,2.7,state.foodUp.potency);
  return upgradeCost(currentFood().durBase,3.1,state.foodUp.duration);
@@ -629,7 +656,7 @@ function buyUpgrade(type){
  if(type==="slimy")cost=upgradeCost(1500,1.4,u.slimy);
  if(type==="warm")cost=upgradeCost(500,1.18,u.warm);
  if(type==="calcium"){if(u.calcium>=8)return;cost=upgradeCost(250000,4,u.calcium)}
- if(state.slime<cost){showToast("Not enough slime.");return}
+ if(cost>=MAX_GAME_NUMBER||state.slime<cost){showToast(cost>=MAX_GAME_NUMBER?"This upgrade has reached the numerical limit.":"Not enough slime.");return}
  state.slime-=cost;
  if(type==="rich")u.rich++;
  if(type==="slimy")u.slimy++;
@@ -960,7 +987,7 @@ function buyMutation(id){
 function evolutionHTML(){
  return Object.entries(EVOS).map(([id,e])=>{const l=state.evolution[id]||0,c=evoCost(id);return `<div class="statLine"><b>${e.name.toUpperCase()}</b> • Lv ${l}<br><div class="effect">${e.desc}</div><div class="flavor">Cost: ${c} Biomass</div><button class="buyBtn" ${(state.biomass||0)<c?'disabled':''} onclick="buyEvolution('${id}')">EVOLVE</button></div>`}).join('');
 }
-function buyEvolution(id){if(!EVOS[id])return;const c=evoCost(id);if((state.biomass||0)<c)return;state.biomass-=c;state.evolution[id]=(state.evolution[id]||0)+1;showToast(EVOS[id].name+" evolved.");save();showUpgrades();updateUI()}
+function buyEvolution(id){if(!EVOS[id])return;const c=evoCost(id);if(c>=MAX_GAME_NUMBER||(state.biomass||0)<c)return;state.biomass-=c;state.evolution[id]=(state.evolution[id]||0)+1;showToast(EVOS[id].name+" evolved.");save();showUpgrades();updateUI()}
 function unlockTankRewards(){
  if(state.collapses>=1)state.unlockedTanks.blackwater=true;
  if(state.collapses>=2)state.unlockedTanks.breeder=true;
@@ -999,11 +1026,11 @@ function applyOfflineProgress(){
  const startPop=state.realPop;
  const r=breedingRate()*eff;
  const growth=Math.exp(Math.min(24,r*elapsed));
- state.realPop=Math.max(state.realPop,state.realPop*growth);
+ state.realPop=Math.max(state.realPop,safeMultiply(state.realPop,growth));
  const avg=(startPop+state.realPop)/2;
  const slimeRatePerSnail=slimePerSecond()/Math.max(1,state.realPop);
- const gain=avg*slimeRatePerSnail*elapsed*eff;
- state.slime+=gain;state.totalSlimeEarned+=gain;state.highestPop=Math.max(state.highestPop,state.realPop);
+ const gain=safeMultiply(avg,slimeRatePerSnail,elapsed,eff);
+ state.slime=safeAdd(state.slime,gain);state.totalSlimeEarned=safeAdd(state.totalSlimeEarned,gain);state.highestPop=Math.max(state.highestPop,state.realPop);
  state.condition=clamp((state.condition||20)+elapsed/3600*2.5,0,100);
  setTimeout(()=>showToast("Away "+Math.floor(elapsed/3600)+"h "+Math.floor((elapsed%3600)/60)+"m • +"+fmt(gain)+" slime"),500);
 }
